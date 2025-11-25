@@ -1,0 +1,1 @@
+early-cse<memssa>,function(instcombine,mem2reg),early-cse<memssa>,function(simplifycfg,correlated-propagation,adce)

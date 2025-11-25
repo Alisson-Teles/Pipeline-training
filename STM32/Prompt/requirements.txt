@@ -1,0 +1,5 @@
+transformers
+huggingface_hub
+sentencepiece
+pandas
+numpy

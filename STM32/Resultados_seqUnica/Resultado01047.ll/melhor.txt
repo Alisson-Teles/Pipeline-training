@@ -1,0 +1,1 @@
+early-cse<memssa>,function(indvars,reassociate,instcombine,sroa),early-cse<memssa>,function(tailcallelim),early-cse<memssa>,function(simplifycfg)

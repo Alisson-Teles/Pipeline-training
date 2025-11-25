@@ -1,0 +1,1 @@
+function(instcombine,loop-idiom),early-cse<memssa>,function(slp-vectorizer,gvn,instcombine,loop-unroll,simplifycfg,instsimplify)

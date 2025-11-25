@@ -1,0 +1,1 @@
+early-cse<memssa>,function(instcombine,jump-threading,licm,gvn,mem2reg,simplifycfg,correlated-propagation,adce)
