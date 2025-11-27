@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Objetivo
+##  Objetivo
 
 Este diretório contém os scripts usados para:
 
@@ -15,7 +15,7 @@ Este diretório contém os scripts usados para:
 
 ---
 
-## 🧭 Visão geral do pipeline
+##  Visão geral do pipeline
 
 Fluxo lógico do pipeline:
 
@@ -42,7 +42,7 @@ Fluxo lógico do pipeline:
 
 ---
 
-## 📁 Estrutura de pastas sugerida
+##  Estrutura de pastas sugerida
 
 ```text
 STM32/
@@ -71,3 +71,234 @@ STM32/
 ├─ melhores.csv                # (gerado) melhor resultado por programa
 └─ prompt_label/
     └─ promptLavel.py          # gera o JSONL/tokens (local pode variar)
+
+-Se alterar os nomes das pastas, lembre-se de ajustar também as variáveis e caminhos dentro dos scripts .sh e .py.
+##  Pré-requisitos
+
+- **Sistema**: Linux (testado em distros tipo Debian/Ubuntu).
+- **LLVM 20** instalado no `PATH`, com binários:
+  - `clang-20`
+  - `opt-20`
+  - `llc-20`
+  - `llvm-size-20`
+- **Python 3.10+**
+- **Dependências típicas para a geração de pares:**
+
+  ```bash
+  pip install transformers huggingface_hub tqdm
+  ```
+
+  Ajuste conforme os `import` presentes no seu `promptLavel.py`.
+
+>  Os scripts assumem sufixo `-20` nos binários (ex.: `opt-20`).  
+> Se estiver usando outra versão (ex.: `opt-18` ou `opt`), edite os scripts e troque os nomes.
+
+---
+
+## 1️ Preparar os arquivos LLVM IR (`arquivos_ll/`)
+
+1. **Extraia ou copie os `.ll` para dentro do diretório `STM32/`.**
+2. **Crie a pasta de trabalho:**
+
+   ```bash
+   mkdir -p arquivos_ll
+   cp angha-ll-stm32f1/*.ll arquivos_ll/
+   ```
+
+3. **Certifique-se de que:**
+
+   - Os IRs são **não otimizados**;
+   - O *target triple* é adequado para STM32, por exemplo: `thumbv7m-none-eabi`;
+   - O *cpu* usado é o do `STM32F103C8T6` (ex.: `cortex-m3`).
+
+---
+
+## 2️ Medir as flags padrão do LLVM (`MedePadrao.sh`)
+
+Este passo é útil para comparação com `-Oz` e demais flags padrão, mas não é estritamente obrigatório para gerar o `.jsonl`.
+
+### 2.1. Ajustar caminhos em `MedePadrao.sh`
+
+Abra o script e revise:
+
+- **Pasta raiz para resultados:**
+
+  ```bash
+  ROOT_DIR="${2:-$PWD}"
+  ```
+
+- **Caminho do CSV global via variável de ambiente `GLOBAL_CSV`**  
+  (configurada em `parallelrun_ForMedePadrao.py`):
+
+  ```python
+  env["GLOBAL_CSV"] = "/caminho/para/dec_otimizacoes_GLOBAL.csv"
+  ```
+
+### 2.2. Tornar o script executável
+
+```bash
+chmod +x MedePadrao.sh
+```
+
+### 2.3. Executar em um único arquivo
+
+```bash
+./MedePadrao.sh caminho/para/arquivo.ll [pasta_raiz]
+```
+
+**O script:**
+
+- Gera IR e objeto para cada flag (`-O1`, `-O2`, `-O3`, `-Os`, `-Oz`);
+- Mede o tamanho com `llvm-size-20`;
+- Atualiza o CSV global (`dec_otimizacoes_GLOBAL.csv`).
+
+### 2.4. Rodar em lote com `parallelrun_ForMedePadrao.py`
+
+No início do script, ajuste:
+
+```python
+cpus = 6                      # número de threads
+folder = "arquivos_ll"        # pasta com os .ll
+command = "./MedePadrao.sh"
+env["GLOBAL_CSV"] = "/caminho/para/dec_otimizacoes_GLOBAL.csv"
+```
+
+Depois execute:
+
+```bash
+python3 parallelrun_ForMedePadrao.py
+```
+
+---
+
+## 3️ Rodar as sequências de Faustino (`rodar_seq_uniq.sh`)
+
+### 3.1. `sequencias_unicas.txt`
+
+- Cada linha contém uma sequência de passes válida para o `opt-20`;
+- Arquivo já adaptado ao *new pass manager*.
+
+### 3.2. Ajustar e habilitar `rodar_seq_uniq.sh`
+
+Verifique no topo do script (exemplo):
+
+```bash
+INPUT="$1"
+SEQ_FILE="${2:-sequencias_unicas.txt}"
+OUTPUT_ROOT="Resultados_seqUnica"
+TMPDIR=$(mktemp -d)
+```
+
+E, mais abaixo, se os binários usam os nomes corretos (`opt-20`, `llc-20`, `clang-20`) e se o alvo (`-mtriple`, `-mcpu`) está configurado para `cortex-m3`.
+
+Torne o script executável:
+
+```bash
+chmod +x rodar_seq_uniq.sh
+```
+
+### 3.3. Rodar em um único arquivo
+
+```bash
+./rodar_seq_uniq.sh caminho/para/arquivo.ll [sequencias.txt]
+```
+
+**O script:**
+
+- Testa todas as sequências em `sequencias_unicas.txt` para aquele `.ll`;
+- Cria `Resultados_seqUnica/<nome_do_arquivo>/` com os artefatos gerados;
+- Registra o melhor resultado em um CSV (utilizado depois na consolidação).
+
+### 3.4. Rodar em lote com `parallelrun_forRodar_seq.py`
+
+No script:
+
+```python
+cpus = 5
+folder = "arquivos_ll"
+command = "./rodar_seq_uniq.sh"
+```
+
+Ajuste `cpus` e `folder` conforme sua máquina e organização.
+
+Execute:
+
+```bash
+python3 parallelrun_forRodar_seq.py
+```
+
+Ao final você terá:
+
+- Uma árvore `Resultados_seqUnica/` com subpastas por programa;
+- CSVs locais com medições de `dec_bytes`.
+
+---
+
+## 4️ Consolidar os melhores resultados (`coleta_melhores.py`)
+
+O script `coleta_melhores.py` percorre `Resultados_seqUnica/`, descobre o melhor objeto para cada `.ll` (menor `dec_bytes`) e gera um CSV único, recomendado utilizar somente ao fazer uso do `parallelrun_forRodar_seq.py`:
+
+```csv
+arquivo,dec_bytes
+prog1.ll,1234
+prog2.ll,980
+...
+```
+
+**Uso típico:**
+
+```bash
+python3 coleta_melhores.py Resultados_seqUnica
+```
+
+O arquivo `melhores.csv` será criado no diretório pai de `Resultados_seqUnica` (normalmente o próprio `STM32/`).
+
+---
+
+## 5️ Gerar os pares prompt–label (`promptLavel.py`)
+
+Com `melhores.csv` pronto e os IRs em `arquivos_ll/`, já é possível montar os pares para treinamento.
+
+### 5.1. Parâmetros esperados (exemplo)
+
+A partir da pasta `STM32/prompt_label/`:
+
+```bash
+python3 promptLavel.py   --hf_token SEU_TOKEN_HF   --csv ../melhores.csv   --dir_ir ../arquivos_ll   --dir_res ../
+```
+
+- `--hf_token`  
+  Token do Hugging Face (necessário se o script carregar tokenizer/modelo privado).  
+  Para modelos públicos, pode ser opcional.
+
+- `--csv`  
+  Caminho para o `melhores.csv`.
+
+- `--dir_ir`  
+  Diretório com os `.ll` de entrada (os mesmos usados no `rodar_seq_uniq.sh`).
+
+- `--dir_res`  
+  Diretório onde se encontra `Resultados_seqUnica/`.
+
+### 5.2. Saídas
+
+- **`saida.jsonl`**  
+  Arquivo com pares *prompt–label* no formato de conversa, por exemplo:
+
+  ```json
+  {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Tell me what passes to run... [code] ...IR... [/code]"
+      },
+      {
+        "role": "assistant",
+        "content": "Run the following passes ..."
+      }
+    ]
+  }
+  ```
+
+- **`tokens.txt`**  
+  Arquivo texto com a contagem de tokens de cada par, útil para análise de janela de contexto.
