@@ -1,1 +1,0 @@
-function(adce,sroa,loop-rotate),early-cse<memssa>,function(simplifycfg,instcombine,loop-unroll,simplifycfg,sroa,simplifycfg,instcombine),early-cse<memssa>

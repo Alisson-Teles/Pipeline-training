@@ -70,6 +70,7 @@ process_one_ll() {
         cp "$TMPDIR/saida.o" "$OUTPUT_DIR/melhor.o"
         cp "$TMPDIR/saida.s" "$OUTPUT_DIR/melhor.s"
         SAIDA_SIZE=$(llvm-size-20 "$TMPDIR/saida.o" |tail -n1|cut -f4)
+        echo "$passes" > "$OUTPUT_DIR/melhor.txt"
         echo -e "\033[38;5;46mMelhor: ${SAIDA_SIZE}\033[0m"
       fi
     fi
