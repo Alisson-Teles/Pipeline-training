@@ -95,6 +95,9 @@ STM32/
 
 ---
 ## 0️⃣ Criar um novo `dataset.rob` com o **c2rob**
+Aqui estamos levando em consideração que você já possui o compilador `robcmp`.
+>Repositório: https://github.com/thborges/robcmp.git
+
 
 Antes de usar o pipeline de otimização, você pode querer gerar um **novo conjunto de programas em ROBL** a partir de códigos C.  
 Para isso, usamos o conversor **c2rob**:
@@ -129,20 +132,27 @@ Se tudo der certo, o comando `make` irá gerar um executável chamado **`c2rob`*
 A sintaxe básica do conversor é (mensagem do próprio binário):
 ```bash
 cd test
-./csmithrun.sh  número_de_códigos_que_deseja_gerar```  (O csmithrun.sh irá gerar )
-
-```text
-Sintaxe: 
+mkdir  cfiles
 ```
+`./csmithrun.sh  número_de_códigos_que_deseja_gerar` (O csmithrun.sh irá gerar quantos códigos você deseja)
+
+Após executar estes comandos, os códigos do `Csmith` estarão presentes dentro da pasta `Cfiles`.
+Para traduzir os `arquivos.c` para `arquivos.rob` basta executar os comandos abaixo:
+
+`PATH=$PATH:caminho/do/executável/do/robcmp` (sem o executável)
+`make -k` 
+
+Saída esperada:
+`arquivo.rob`
+`arquivo.ll`
+
+Para realizar o mesmo procedimentos para códigos do AnghaBench, basta pegar uma parcela significativas de códigos do repositório e colocar em `Cfiles`, após isso, basta realizar os mesmos procedimentos. (Pode ser que quando você está lendo isso, o `c2rob` ainda não forneça suporte de tradução de códigos do AnghaBench, portanto, podendo-se utilizar apenas os códigos gerados do Csmith, ou baixar compilar os códigos do AnghaBench diretamente com o `robcmp` para gerar os `meus_programas.ll`. Para gerar `programas.ll` usando o `robmp`, basta compilar o código sem `nenhuma flag de otimização`).
+
 
 Ou seja, para converter um arquivo C:
 
-```bash
-./c2rob meu_programa.c > meu_programa.rob
-```
-
 - **Entrada**: `meu_programa.c` (código em C compatível com o front-end do `c2rob`);
-- **Saída**: `meu_programa.rob` (código em ROBL gerado na saída padrão e redirecionado para arquivo).
+- **Saída**: `meu_programa.rob` & `meu_programa.ll` (código em ROBL gerado na saída padrão e redirecionado para arquivo).
 
 
 ## 1️ Preparar os arquivos LLVM IR (`arquivos_ll/`)
