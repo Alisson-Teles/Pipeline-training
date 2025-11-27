@@ -94,6 +94,56 @@ STM32/
 > Se estiver usando outra versão (ex.: `opt-18` ou `opt`), edite os scripts e troque os nomes.
 
 ---
+## 0️⃣ Criar um novo `dataset.rob` com o **c2rob**
+
+Antes de usar o pipeline de otimização, você pode querer gerar um **novo conjunto de programas em ROBL** a partir de códigos C.  
+Para isso, usamos o conversor **c2rob**:
+
+> Repositório: https://github.com/thborges/c2rob
+
+O `c2rob` lê um arquivo em C e escreve, na saída padrão, o programa equivalente na linguagem **ROBL**, que é a linguagem de entrada do `robcmp`.
+
+---
+
+### 0.1. Clonar e compilar o `c2rob`
+
+No seu ambiente Linux (com `gcc`, `flex` e `bison` instalados):
+
+```bash
+git clone https://github.com/thborges/c2rob.git
+cd c2rob
+make
+cd test
+make
+```
+
+Se tudo der certo, o comando `make` irá gerar um executável chamado **`c2rob`** no diretório raiz do repositório.
+
+> Se tiver problemas de compilação, verifique se os pacotes `flex` e `bison` estão instalados
+> (por exemplo, `sudo apt install flex bison build-essential` em distros Debian/Ubuntu).
+
+---
+
+### 0.2. Converter um arquivo C para ROBL
+
+A sintaxe básica do conversor é (mensagem do próprio binário):
+```bash
+cd test
+./csmithrun.sh  número_de_códigos_que_deseja_gerar```  (O csmithrun.sh irá gerar )
+
+```text
+Sintaxe: 
+```
+
+Ou seja, para converter um arquivo C:
+
+```bash
+./c2rob meu_programa.c > meu_programa.rob
+```
+
+- **Entrada**: `meu_programa.c` (código em C compatível com o front-end do `c2rob`);
+- **Saída**: `meu_programa.rob` (código em ROBL gerado na saída padrão e redirecionado para arquivo).
+
 
 ## 1️ Preparar os arquivos LLVM IR (`arquivos_ll/`)
 
