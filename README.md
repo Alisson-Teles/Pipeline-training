@@ -92,7 +92,8 @@ STM32/
 
 > Os scripts assumem sufixo `-20` nos binários (ex.: `opt-20`).  
 > Se estiver usando outra versão (ex.: `opt-18` ou `opt`), edite os scripts e troque os nomes.
-> Se alterar os nomes das pastas, lembre-se de ajustar também as variáveis e caminhos dentro dos scripts .sh e .py.
+
+> Se alterar os nomes das pastas, lembre-se de ajustar também as variáveis e caminhos dentro dos scripts `.sh` e `.py`.
 ---
 ## 0️⃣ Criar um novo `dataset.rob` com o **c2rob**
 Aqui estamos levando em consideração que você já possui o compilador `robcmp`.
